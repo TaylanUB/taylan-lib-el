@@ -1,5 +1,4 @@
-(eval-when-compile
-  (require 'cl))
+(eval-when-compile (require 'cl))
 
 
 ;;; Anaphora
@@ -50,7 +49,7 @@ The functions must all be unary."
   "Helper macro for `destructuring-mapcar' and
 `destructuring-map'."
   (declare (indent 3))
-  (let ((elt (gensym)))
+  (let ((elt (make-symbol "element")))
     `(,map-function (lambda (,elt)
                       (destructuring-bind ,args ,elt
                         ,@body))
@@ -84,18 +83,18 @@ to the corresponding values in each element."
 
 (defun replace-symbol (from-symbol to-symbol &optional delimited start end)
   (interactive "sReplace symbol: \nsReplace symbol with: ")
-  (replace-regexp (rx symbol-start (eval from-symbol) symbol-end)
-                  to-symbol
-                  delimited start end))
+  (while (re-search-forward
+          (rx-to-string `(: symbol-start ,from-symbol symbol-end)))
+    (replace-match to-symbol)))
 
 
 ;;; Match
 
 (defmacro for-match (regexp string &rest body)
   (declare (indent 2))
-  (let ((re (gensym))
-        (str (gensym))
-        (idx (gensym)))
+  (let ((re (make-symbol "regexp"))
+        (str (make-symbol "string"))
+        (idx (make-symbol "index")))
     `(let ((,re ,regexp)
            (,str ,string))
        (while (string-match ,re ,str)
@@ -344,10 +343,10 @@ all requires."
 INITIAL-CONTENTS is evaluated before the temporary buffer is
 created, and inserted if non-nil."
   (declare (indent 1))
-  (let ((initial-contents* (gensym)))
-    `(let ((,initial-contents* ,initial-contents))
+  (let ((content (make-symbol "initial-contents")))
+    `(let ((,content ,initial-contents))
        (with-temp-buffer
-         (if ,initial-contents* (insert ,initial-contents*))
+         (if ,content (insert ,content))
          ,@body
          (buffer-string)))))
 
@@ -386,7 +385,7 @@ output.")
   "Execute string COMMAND in inferior shell with STRING as input."
   (with-temp-buffer
     (insert string)
-    (shell-command-on-region (point-min) (point-max))))
+    (shell-command-on-region (point-min) (point-max) command)))
 
 ;; `shell-command-to-string' exists
 (defadvice shell-command-to-string (around remove-trailing-newlines activate)
@@ -399,7 +398,7 @@ output.")
   "Execute string COMMAND in inferior shell with region as input
 and return its output as a string.  Trailing newlines are removed
 if `shell-command-remove-trailing-newlines' is non-nil."
-  (shell-command-on-string-to-string (buffer-substring start end)))
+  (shell-command-on-string-to-string (buffer-substring start end) command))
 
 (defun shell-command-on-string-to-string (string command)
   "Execute string COMMAND in inferior shell with STRING as input
@@ -602,6 +601,7 @@ exist."
   (term-char-mode))
 
 (defvar mplayer-executable "mplayer")
+
 (defun mplayer (file &optional arguments)
   "Start a terminal-emulator with MPlayer playing FILE.
 When used interactively, the prefix argument tells to prompt the
@@ -637,9 +637,6 @@ list of strings."
          (uri (youtube-get-real-uri uri (and (not (string= "" format))
                                              format))))
     (mplayer uri mplayer-arguments)))
-
-
-;;; Shellplayer
 
 (defvar shellplayer-playlist-file (sysfile 'shellplayer-tmpdir "playlist")
   "Playlist file of shellplayer.")

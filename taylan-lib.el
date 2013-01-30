@@ -522,7 +522,8 @@ on `pastebin-yank--pastebin-command'."
 (defun create-temporary-buffer ()
   "Create a temporary buffer and switch to it."
   (interactive)
-  (switch-to-buffer (generate-new-buffer "*temporary-buffer*")))
+  (switch-to-buffer (generate-new-buffer "*temporary-buffer*"))
+  (fundamental-mode))
 
 
 ;;; Terminal and shell
@@ -609,7 +610,8 @@ user for a complete shell command, such that arbitrary arguments
 can be added.  When used non-interactively, ARGUMENTS must be a
 list of strings."
   (interactive "fFile: \nP")
-  (let* ((partial-shell-command
+  (let* ((file (if (file-name-absolute-p file) file (concat "./" file)))
+         (partial-shell-command
           (concat mplayer-executable " " (shell-string-quote file) " "))
          (shell-command
           (if (and (called-interactively-p 'any) arguments)

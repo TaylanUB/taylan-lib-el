@@ -1,4 +1,5 @@
-(eval-when-compile (require 'cl))
+(eval-when-compile
+  (require 'cl))
 
 
 ;;; Anaphora
@@ -91,6 +92,11 @@ to the corresponding values in each element."
 ;;; Match
 
 (defmacro for-match (regexp string &rest body)
+  "Evaluate BODY for each occurrence of REGEXP in STRING.
+
+During the evaluation of BODY, `$' is bound to a function which
+can be used to get a matched sub-expression, like `match-string'.
+E.g. ($ 0) will return the whole string that matched."
   (declare (indent 2))
   (let ((re (make-symbol "regexp"))
         (str (make-symbol "string"))

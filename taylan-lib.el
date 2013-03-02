@@ -208,14 +208,14 @@ Also creates the function if it doesn't exist. See
 If PATH-COMPONENTS are given, treat all components up to the last
 one, including the system file NAME, as directories, and
 concatenate them to make a path."
-  (apply 'concat
-         (getenv (replace-regexp-in-string
-                  "-" "_" (upcase (symbol-name name))))
-         (mapcar (lambda (s) (concat "/" s)) path-components)))
+  (cl-reduce (lambda (path file) (expand-file-name file path))
+             (cons (getenv (replace-regexp-in-string
+                            "-" "_" (upcase (symbol-name name))))
+                   path-components)))
 
 (defun sysdir (name &rest path-components)
   "Like `sysfile', but returns a directory."
-  (concat (apply 'sysfile name path-components) "/"))
+  (file-name-as-directory (apply 'sysfile name path-components)))
 
 (defmacro make-dir-abstractions (&rest specs)
   "SPECS is a list of two-elements lists like (NAME PATH), where
@@ -238,12 +238,12 @@ like `<name>-file' but returns a directory, is created."
            (apply 'concat ,dir-var (maplist
                                     (lambda (list)
                                       (if (cdr list)
-                                          (concat (car list) "/")
+                                          (file-name-as-directory (car list))
                                         (car list)))
                                     path-components)))
          (defun ,dir-fn (&rest path-components)
            ,(concat "Like `" (symbol-name file-fn) "' but returns a directory.")
-           (concat (apply ',file-fn path-components) "/"))))))
+           (file-name-as-directory (apply ',file-fn path-components)))))))
 
 
 ;;; Recursive directory traversal
@@ -475,7 +475,7 @@ kill-ring."
 
 (defun toggle-x-clipboard-usage ()
   (interactive)
-  (setq x-select-enable-clipboard (not x-select-enable-clipboard)))
+  (message "%S" (toggle x-select-enable-clipboard)))
 
 
 ;;; Pastebin yank
@@ -578,6 +578,14 @@ appropriately."
 ;;; SSH
 
 (defun ssh (host &optional user)
+  "Run SSH in a term-mode buffer for HOST."
+  (interactive "sHost: \nsUser: ")
+  (let ((address (concat (if (< 0 (length user)) (concat user "@")) host)))
+    (switch-to-buffer
+     (make-term (concat "SSH for " address) "ssh" nil address))
+    (term-char-mode)))
+
+(defun ssh-dired (host &optional user)
   "Visit home directory at HOST via tramp/ssh."
   (interactive "sHost: \nsUser: ")
   (find-file
@@ -616,7 +624,10 @@ user for a complete shell command, such that arbitrary arguments
 can be added.  When used non-interactively, ARGUMENTS must be a
 list of strings."
   (interactive "fFile: \nP")
-  (let* ((file (if (file-name-absolute-p file) file (concat "./" file)))
+  (let* ((file (if (or (file-name-absolute-p file)
+                       (string-match-p "^[a-z:]*://" file))
+                   file
+                 (expand-file-name file)))
          (partial-shell-command
           (concat mplayer-executable " " (shell-string-quote file) " "))
          (shell-command

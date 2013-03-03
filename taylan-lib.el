@@ -44,40 +44,16 @@ The functions must all be unary."
       arg)))
 
 
-;;; Destructuring
+;;; Genprogn
 
-(defmacro destructuring-map (map-function args sequence &rest body)
-  "Helper macro for `destructuring-mapcar' and
-`destructuring-mapc'."
-  (declare (indent 3))
-  (let ((elt (make-symbol "element")))
-    `(,map-function (lambda (,elt)
-                      (destructuring-bind ,args ,elt
-                        ,@body))
-                    ,sequence)))
-
-(defmacro destructuring-mapcar (args sequence &rest body)
-  "Evaluate BODY for each element of SEQUENCE, with the variables
-specified in ARGS bound to the corresponding values in each
-element, and make a list of the results."
-  (declare (indent 2))
-  `(destructuring-map mapcar ,args ,sequence ,@body))
-
-(defmacro destructuring-mapc (args sequence &rest body)
-  "Evaluate BODY for each element of SEQUENCE for side-effects
-only, with the variables specified in ARGS bound to the
-corresponding values in each element."
-  (declare (indent 2))
-  `(destructuring-map mapc ,args ,sequence ,@body))
-
-(defmacro destructuring-mapcar-genprogn (args sequence &rest body)
+(defmacro genprogn (args sequence &rest body)
   "This is a helper for creating macros.
 Generate a `progn' expression that would execute BODY for each
 element of SEQUENCE, with the variables specified in ARGS bound
 to the corresponding values in each element."
   (declare (indent 2))
   `(cons 'progn
-         (destructuring-mapcar ,args ,sequence ,@body)))
+         (loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
 
 
 ;;; Replace symbol
@@ -126,16 +102,13 @@ use the new value.  The plist OLD is modified by side-effects."
 
 (defmacro toggle (&rest symbols)
   "Set each SYMBOL to (not SYMBOL)."
-  (destructuring-mapcar-genprogn symbol symbols
-    `(set ',symbol (not ,symbol))))
+  (genprogn symbol symbols `(set ',symbol (not ,symbol))))
 (defmacro enable (&rest symbols)
   "Set each SYMBOL to t."
-  (destructuring-mapcar-genprogn symbol symbols
-    `(set ',symbol t)))
+  (genprogn symbol symbols `(set ',symbol t)))
 (defmacro disable (&rest symbols)
   "Set each SYMBOL to nil."
-  (destructuring-mapcar-genprogn symbol symbols
-    `(set ',symbol nil)))
+  (genprogn symbol symbols `(set ',symbol nil)))
 
 (defun toggler-symbol (variable)
   "Returns the symbol of the toggler-function of VARIABLE."
@@ -224,7 +197,7 @@ variable `<name>-dir' that holds PATH, a function `<name>-file'
 that returns a file in `<name>-dir' by concatenating its
 arguments as path-components, and a function `<name>-dir' that is
 like `<name>-file' but returns a directory, is created."
-  (destructuring-mapcar-genprogn (name dir) specs
+  (genprogn (name dir) specs
     (let* ((name (symbol-name name))
            (dir-var (intern (concat name "-dir")))
            (file-fn (intern (concat name "-file")))
@@ -295,7 +268,7 @@ colorspace."
 (defmacro set-face-attributes (&rest dict)
   "DICT is an alist mapping faces to a plist like the ARGS
 parameter of `set-face-attributes'."
-  (destructuring-mapcar-genprogn (face &rest attrs) dict
+  (genprogn (face . attrs) dict
     `(progn
        (defface ,face nil nil)
        (set-face-attribute ',face nil ,@attrs))))
@@ -305,7 +278,7 @@ parameter of `set-face-attributes'."
 DEFINITIONS should be an alist mapping KEYSs as understood by
 `kbd' to DEFs as understood by `define-key'."
   (declare (indent 1))
-  (destructuring-mapcar-genprogn (keys def) definitions
+  (genprogn (keys def) definitions
     `(define-key ,kmap (kbd ,keys) ,def)))
 
 (defmacro modify-syntax-entries (table &rest entries)
@@ -313,19 +286,19 @@ DEFINITIONS should be an alist mapping KEYSs as understood by
 Pass nil to alter the current syntax table.  ENTRIES is an alist
 mapping CHARs to NEWENTRYs. See `modify-syntax-entry'."
   (declare (indent 1))
-  (destructuring-mapcar-genprogn (char newentry) entries
+  (genprogn (char newentry) entries
     `(modify-syntax-entry ,char ,newentry ,table)))
 
 
 ;;; Syntax-table convenience functions
 
-(defun syntax-table-add-paren-pair (open-char close-char &optional table)
+(defun syntax-table-add-paren-pair (open close &optional table)
   "Add OPEN and CLOSE to the syntax table as a parenthesis pair.
 OPEN and CLOSE can be chars or strings containing one char."
-  (destructuring-mapc (char) '(open-char close-char)
-    `(if (stringp ,char) (setq ,char (elt ,char 0))))
-  (modify-syntax-entries table
-    (open-char (string ?\( close-char))))
+  (let ((open (if (stringp open) (elt open 0) open))
+        (close (if (stringp close) (elt close 0) close)))
+   (modify-syntax-entries table
+     (open (string ?\( close)))))
 
 (defun syntax-table-add-quote-char (char &optional table)
   (modify-syntax-entries table

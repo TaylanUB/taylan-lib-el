@@ -48,7 +48,7 @@ The functions must all be unary."
 
 (defmacro destructuring-map (map-function args sequence &rest body)
   "Helper macro for `destructuring-mapcar' and
-`destructuring-map'."
+`destructuring-mapc'."
   (declare (indent 3))
   (let ((elt (make-symbol "element")))
     `(,map-function (lambda (,elt)
@@ -355,17 +355,6 @@ created, and inserted if non-nil."
          (if ,content (insert ,content))
          ,@body
          (buffer-string)))))
-
-
-;;; Dired
-
-(defun dired-view-file-other-window ()
-  "In Dired, examine a file in view mode, returning to Dired when done.
-When file is a directory, show it in this buffer if it is inserted.
-Otherwise, display it in another window."
-  (interactive)
-  (cl-flet ((view-file (file) (view-file-other-window file)))
-    (dired-view-file)))
 
 
 ;;; Shell commands

@@ -80,7 +80,7 @@ E.g. ($ 0) will return the whole string that matched."
     `(let ((,re ,regexp)
            (,str ,string))
        (while (string-match ,re ,str)
-         (cl-flet (($ (num) (match-string num ,str)))
+         (cl-letf (((symbol-function '$) (num) (match-string num ,str)))
            ,@body)
          (setq ,str (substring ,str (match-end 0)))))))
 
@@ -181,10 +181,10 @@ Also creates the function if it doesn't exist. See
 If PATH-COMPONENTS are given, treat all components up to the last
 one, including the system file NAME, as directories, and
 concatenate them to make a path."
-  (cl-reduce (lambda (path file) (expand-file-name file path))
-             (cons (getenv (replace-regexp-in-string
-                            "-" "_" (upcase (symbol-name name))))
-                   path-components)))
+  (let ((file (getenv (replace-regexp-in-string
+                            "-" "_" (upcase (symbol-name name))))))
+    (dolist (component path-components file)
+      (setq file (expand-file-name component file)))))
 
 (defun sysdir (name &rest path-components)
   "Like `sysfile', but returns a directory."

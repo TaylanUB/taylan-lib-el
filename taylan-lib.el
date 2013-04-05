@@ -1,5 +1,6 @@
 (eval-when-compile
-  (require 'cl))
+  (require 'cl)
+  (require 'shell))
 
 
 ;;; Anaphora
@@ -496,6 +497,8 @@ on `pastebin-yank--pastebin-command'."
 
 ;;; Terminal and shell
 
+(declare-function term-send-raw-string "term" (chars))
+
 (defun term-with-shell ()
   "Start `term' with a shell in it and rename the buffer
 appropriately."
@@ -539,6 +542,7 @@ appropriately."
 
 ;;; SSH
 
+(declare-function term-char-mode "term" ())
 (defun ssh (host &optional user)
   "Run SSH in a term-mode buffer for HOST."
   (interactive "sHost: \nsUser: ")
@@ -569,6 +573,9 @@ appropriately."
 
 
 ;;; Programs
+
+(declare-function term-mode "term" ())
+(declare-function term-char-mode "term" ())
 
 (defun rtorrent ()
   "Switch to the rtorrent buffer, creating it if it doesn't

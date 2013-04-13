@@ -1,6 +1,41 @@
+;;; taylan-lib.el --- Personal Elisp library
+
+;; Copyright (C) 2013  Taylan Ulrich B.
+
+;; Author: Taylan Ulrich B. <taylanbayirli@gmail.com>
+;; Keywords: extensions, tools
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Code:
+
 (eval-when-compile
   (require 'cl)
+  ;; To silence the compiler.
   (require 'shell))
+
+
+;;; Genprogn
+
+(defmacro genprogn (args sequence &rest body)
+  "This is a helper for creating macros.
+Generate a `progn' expression that would execute BODY for each
+element of SEQUENCE, with the variables specified in ARGS bound
+to the corresponding values in each element."
+  (declare (indent 2))
+  `(cons 'progn
+         (loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
 
 
 ;;; Anaphora
@@ -11,13 +46,12 @@
 
 (defmacro acond (&rest clauses)
   "Anaphoric cond."
-  `(catch done
-     (mapc
-      (lambda (clause)
-        (let ((it (eval (car clause))))
-          (when it
-            (throw 'done (eval `(progn ,@(cdr clause)))))))
-      ',clauses)))
+  (if (null clauses)
+      'nil
+    (let ((test (caar clauses))
+          (body (cdar clauses))
+          (clauses (cdr clauses)))
+      `(aif ,test (progn ,@body) (acond ,@clauses)))))
 
 
 ;; Alists
@@ -43,18 +77,6 @@ The functions must all be unary."
       (dolist (function functions)
         (setq arg (funcall function arg)))
       arg)))
-
-
-;;; Genprogn
-
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
 
 
 ;;; Replace symbol
@@ -412,28 +434,6 @@ grammar, would yield a \"TOKEN\" with the value STRING."
   (concat "'" (replace-regexp-in-string "'" "'\\\\''" string) "'"))
 
 
-;;; Xclip
-
-(defun xclip-region-to-primary (start end)
-  "Pipe region to xclip, using primary selection."
-  (interactive (list (region-beginning) (region-end)))
-  (shell-command-on-region start end "xclip -i -selection primary"))
-(defun xclip-region-to-clipboard (start end)
-  "Pipe region to xclip, using clipboard selection."
-  (interactive (list (region-beginning) (region-end)))
-  (shell-command-on-region start end "xclip -i -selection clipboard"))
-(defun xclip-primary-to-kill-ring ()
-  "Get primary selection from xclip and put it into the
-kill-ring."
-  (interactive)
-  (shell-command-to-kill-ring "xclip -o -selection primary"))
-(defun xclip-clipboard-to-kill-ring ()
-  "Get clipboard selection from xclip and put it into the
-kill-ring."
-  (interactive)
-  (shell-command-to-kill-ring "xclip -o -selection clipboard"))
-
-
 ;;; Toggle X clipboard usage
 
 (defun toggle-x-clipboard-usage ()
@@ -454,6 +454,8 @@ This is passed to `funcall'.")
 This is executed as a shell command.")
 
 (defun pastebin-yank--pastebin (string)
+  "Pass STRING to the stdin of `pastebin-yank--pastebin-command'
+and return the stdout."
   (shell-command-on-string-to-string string pastebin-yank--pastebin-command))
 
 (defun pastebin-yank (&rest args)
@@ -634,3 +636,4 @@ list of strings."
   (find-file shellplayer-playlist-file))
 
 (provide 'taylan-lib)
+;;; taylan-lib.el ends here

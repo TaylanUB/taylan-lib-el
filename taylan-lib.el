@@ -56,15 +56,18 @@ to the corresponding values in each element."
 
 ;; Alists
 
-(defun aput (alist-sym key val)
+(defun aput (alist-sym key value)
+  "Set the value for KEY in the alist stored in ALIST-SYM to
+VALUE."
   (let ((cons (assoc key (symbol-value alist-sym))))
     (if cons
-        (setcdr cons val)
-      (push (cons key val) (symbol-value alist-sym)))))
+        (setcdr cons value)
+      (push (cons key value) (symbol-value alist-sym)))))
 
-(defun aget (alist key &optional ignore)
+(defun aget (alist key &optional default)
+  "Return the value for KEY in ALIST, or DEFAULT."
   (let ((entry (assoc key alist)))
-    (if entry (cdr entry) nil)))
+    (if entry (cdr entry) default)))
 
 
 ;;; Compose
@@ -72,7 +75,7 @@ to the corresponding values in each element."
 (defun compose (&rest functions)
   "Return the composition of functions in the list FUNCTIONS.
 The functions must all be unary."
-  (lexical-let ((functions functions))
+  (lexical-let ((functions (nreverse functions)))
     (lambda (arg)
       (dolist (function functions)
         (setq arg (funcall function arg)))
@@ -82,6 +85,7 @@ The functions must all be unary."
 ;;; Replace symbol
 
 (defun replace-symbol (from-symbol to-symbol &optional delimited start end)
+  "Replace a symbol in region."
   (interactive "sReplace symbol: \nsReplace symbol with: ")
   (while (re-search-forward
           (rx-to-string `(: symbol-start ,from-symbol symbol-end)))
@@ -328,7 +332,7 @@ OPEN and CLOSE can be chars or strings containing one char."
     (char "\"")))
 
 
-;;; Declarative configuration
+;;; Require-lib
 
 (defmacro require-lib (path &rest requires)
   "Add (concat emacs-lib-dir path) to load-path and require
@@ -430,8 +434,85 @@ removed if `shell-command-remove-trailing-newlines' is non-nil."
 
 (defun shell-string-quote (string)
   "Return a string which, when parsed according to POSIX shell
-grammar, would yield a \"TOKEN\" with the value STRING."
+grammar, would yield a \"TOKEN\" with the value STRING.
+
+In less technical terms, this sanitizes a string to be injected
+into a shell command.  For example it could be used like:
+
+ (shell-command (concat \"grep -e \" (shell-string-quote str)))
+
+The above is sure to pass the string STR directly to the ARGV of
+grep.  It is safe, I swear.  Note however that the position in
+which you inject the resulting string can still change its
+meaning; e.g. the following will not work as expected,
+
+ (shell-command (concat \"grep -e\" (shell-string-quote str)))
+
+because there is no white-space between the \"-e\" and the string
+in STR, in the resulting concatenated string."
   (concat "'" (replace-regexp-in-string "'" "'\\\\''" string) "'"))
+
+(eval-when-compile
+  (defun shell-quasiquote-part (part)
+    "Process part of a `shell-quasiquote' body."
+    (cond
+     ((symbolp part) (symbol-name part))
+     ((stringp part) part)
+     ((numberp part) (number-to-string part))
+     (t (error "Bad part: %S" part)))))
+
+(defmacro shell-quasiquote (&rest parts)
+  "Create a shell command safe against injection.
+
+This works somewhat akin to ` aka quasi-quote, but is more
+complex.  Every element of PARTS must be one of:
+
+A symbol, evaluating to its name.
+A string, evaluating to itself.
+A number, evaluating to its decimal representation.
+
+\",x\", where x must evaluate to a symbol, string, or number, and
+will be interpreted as above and then passed through
+`shell-string-quote'.
+
+\",@x\", where x must be a list whose elements will each be
+interpreted like the x in \",x\" and spliced into the results.
+
+\",,x\", where x will be interpreted like in \",x\" but not
+passed through `shell-string-quote'.
+
+\",,@x\", where x must be a list whose elements will each be
+interpreted like the x in \",,x\" and spliced into the results.
+
+All resulting strings are concatenated with separating
+white-space."
+  `(mapconcat
+    #'identity
+    (list
+     ,@(mapcar
+        (lambda (part)
+          (if (not (consp part))
+              (shell-quasiquote-part part)
+            (cond
+             ((eq (car part) '\,)
+              (let ((part (cadr part)))
+                (cond
+                 ((and (consp part) (eq (car part) '\,))
+                  `(shell-quasiquote-part ,(cadr part)))
+                 ((and (consp part) (eq (car part) '\,@))
+                  `(mapconcat #'shell-quasiquote-part ,(cadr part) " "))
+                 (t
+                  `(shell-string-quote (shell-quasiquote-part ,part))))))
+             ((eq (car part) '\,@)
+              `(mapconcat
+                (lambda (part)
+                  (shell-string-quote (shell-quasiquote-part part)))
+                ,(cadr part)
+                " "))
+             (t
+              (error "Plain list not allowed: %S" part)))))
+        parts))
+    " "))
 
 
 ;;; Toggle X clipboard usage
@@ -600,26 +681,23 @@ list of strings."
                    file
                  (expand-file-name file)))
          (partial-shell-command
-          (concat mplayer-executable " " (shell-string-quote file) " "))
+          (shell-quasiquote ,mplayer-executable ,file))
          (shell-command
           (if (and (called-interactively-p 'any) arguments)
               (read-shell-command "Shell command: " partial-shell-command)
-            (apply 'concat partial-shell-command
-                   (mapcar (lambda (string)
-                             (concat " " (shell-string-quote string)))
-                           arguments)))))
+            (concat partial-shell-command
+                    (mapconcat #'shell-string-quote arguments " ")))))
     (switch-to-buffer (make-term "MPlayer" "sh" nil "-c" shell-command))
     (term-mode)
     (term-char-mode)))
 
 (defun youtube-get-formats (uri)
   "Get the available formats for the YouTube video at URI."
-  (shell-command-to-string (concat "youtube-dl -qF " (shell-string-quote uri))))
+  (shell-command-to-string (shell-quasiquote youtube-dl -qF ,uri)))
 (defun youtube-get-real-uri (uri &optional format)
   "Get the URI for the YouTube video at URI."
   (shell-command-to-string
-   (concat "youtube-dl -qg " (shell-string-quote uri)
-           (and format (concat " -f " (shell-string-quote format))))))
+   (shell-quasiquote youtube-dl -qg ,uri ,@(if format `(-f ,format)))))
 (defun youtube (uri &optional mplayer-arguments)
   "This is like the `mplayer' command but takes a YouTube URI."
   (interactive "sURI: \nP")

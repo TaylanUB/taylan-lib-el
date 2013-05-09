@@ -332,16 +332,6 @@ OPEN and CLOSE can be chars or strings containing one char."
     (char "\"")))
 
 
-;;; Require-lib
-
-(defmacro require-lib (path &rest requires)
-  "Add (concat emacs-lib-dir path) to load-path and require
-all requires."
-  `(progn
-     (add-to-list 'load-path (emacs-lib-dir ,path))
-     ,@(mapcar (lambda (r) `(require ',r)) requires)))
-
-
 ;;; With string buffer
 
 (defmacro with-string-buffer (initial-contents &rest body)

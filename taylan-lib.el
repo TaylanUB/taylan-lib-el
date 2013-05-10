@@ -703,5 +703,32 @@ list of strings."
   (interactive)
   (find-file shellplayer-playlist-file))
 
+
+;;; OS X goodies
+
+(defun osx-applescript (script)
+  "Execute the AppleScript SCRIPT asynchronously."
+  (start-process "osx-applescript" nil "osascript" "-e" script))
+
+(defun osx-applescript-to-string (script)
+  "Execute the AppleScript SCRIPT synchronously and return its
+output as a string."
+  (shell-command-to-string (shell-quasiquote osascript -e ,script)))
+
+(defun osx-alert ()
+  "Make Emacs display an OS X alert box.
+
+This will make the app icon bounce on OS X when Emacs isn't in
+the fore-ground, so it can be used as a simple notification
+mechanism to draw a user's attention to Emacs when they're
+working with another program."
+  (osx-applescript "tell application \"Emacs\" to display alert \"Alert!\""))
+
+(defun osx-frame-focused-p ()
+  "Return non-nil if Emacs.app is \"frontmost\"."
+  (let ((output (osx-applescript-to-string
+                 "path to frontmost application as Unicode text")))
+    (string-match-p ":Emacs.app:$" output)))
+
 (provide 'taylan-lib)
 ;;; taylan-lib.el ends here

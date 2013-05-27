@@ -438,7 +438,7 @@ meaning; e.g. the following will not work as expected,
 
  (shell-command (concat \"grep -e\" (shell-string-quote str)))
 
-because there is no white-space between the \"-e\" and the string
+because there is no white-space between the `-e' and the string
 in STR, in the resulting concatenated string."
   (concat "'" (replace-regexp-in-string "'" "'\\\\''" string) "'"))
 
@@ -461,18 +461,18 @@ A symbol, evaluating to its name.
 A string, evaluating to itself.
 A number, evaluating to its decimal representation.
 
-\",x\", where x must evaluate to a symbol, string, or number, and
+`,x', where x must evaluate to a symbol, string, or number, and
 will be interpreted as above and then passed through
 `shell-string-quote'.
 
-\",@x\", where x must be a list whose elements will each be
-interpreted like the x in \",x\" and spliced into the results.
+`,@x', where x must be a list whose elements will each be
+interpreted like the x in `,x' and spliced into the results.
 
-\",,x\", where x will be interpreted like in \",x\" but not
+`,,x', where x will be interpreted like in `,x' but not
 passed through `shell-string-quote'.
 
-\",,@x\", where x must be a list whose elements will each be
-interpreted like the x in \",,x\" and spliced into the results.
+`,,@x', where x must be a list whose elements will each be
+interpreted like the x in `,,x' and spliced into the results.
 
 All resulting strings are concatenated with separating
 white-space."

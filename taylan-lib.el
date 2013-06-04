@@ -517,8 +517,7 @@ white-space."
 (defvar pastebin-yank--yank-function
   (lambda (&rest args)
     (funcall (key-binding (kbd "C-y")) args))
-  "The function used to replicate yanking.
-This is passed to `funcall'.")
+  "The function used to replicate yanking.")
 
 (defvar pastebin-yank--pastebin-command "sprunge"
   "The command for pastebinning.

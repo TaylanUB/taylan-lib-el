@@ -82,6 +82,18 @@ The functions must all be unary."
       arg)))
 
 
+;;; Time execution
+
+(defmacro time (&rest body)
+  "Return execution time of body in seconds as a float."
+  `(let ((start-time (current-time)))
+     ,@body
+     (let ((time (time-subtract (current-time) start-time)))
+       (+ (* (nth 0 time) (expt 2 16))
+          (nth 1 time)
+          (/ (nth 2 time) 1000000.0)))))
+
+
 ;;; Replace symbol
 
 (defun replace-symbol (from-symbol to-symbol &optional delimited start end)

@@ -119,7 +119,7 @@ E.g. ($ 0) will return the whole string that matched."
     `(let ((,re ,regexp)
            (,str ,string))
        (while (string-match ,re ,str)
-         (cl-letf (((symbol-function '$) (num) (match-string num ,str)))
+         (flet (($ (num) (match-string num ,str)))
            ,@body)
          (setq ,str (substring ,str (match-end 0)))))))
 

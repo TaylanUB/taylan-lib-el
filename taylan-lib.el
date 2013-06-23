@@ -96,12 +96,20 @@ The functions must all be unary."
 
 ;;; Replace symbol
 
-(defun replace-symbol (from-symbol to-symbol &optional delimited start end)
-  "Replace a symbol in region."
-  (interactive "sReplace symbol: \nsReplace symbol with: ")
-  (while (re-search-forward
-          (rx-to-string `(: symbol-start ,from-symbol symbol-end)))
-    (replace-match to-symbol)))
+(defun replace-symbol (from-symbol to-symbol &optional start end)
+  "Call `replace-regexp' with FROM-SYMBOL surrounded with
+symbol-delimiters, and the other arguments unchanged."
+  (interactive
+   (let* ((region (and transient-mark-mode mark-active))
+          (common
+           (query-replace-read-args
+            (concat "Replace symbol" (if region " in region"))
+            nil)))
+     (list (nth 0 common) (nth 1 common)
+           (if region (region-beginning))
+           (if region (region-end)))))
+  (replace-regexp (rx-to-string `(: symbol-start ,from-symbol symbol-end))
+                  to-symbol nil start end))
 
 
 ;;; Match

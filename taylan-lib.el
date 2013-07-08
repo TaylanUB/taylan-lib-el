@@ -314,7 +314,7 @@ colorspace."
 
 (defmacro set-face-attributes (&rest dict)
   "DICT is an alist mapping faces to a plist like the ARGS
-parameter of `set-face-attributes'."
+parameter of `set-face-attribute'."
   (genprogn (face . attrs) dict
     `(progn
        (defface ,face nil nil)

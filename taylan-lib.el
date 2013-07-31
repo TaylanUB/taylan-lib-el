@@ -566,7 +566,8 @@ on `pastebin-yank--pastebin-command'."
   "Fix indentation after the inserted newline."
   (save-excursion
     (forward-line)
-    (indent-according-to-mode)))
+    (unless (= (line-beginning-position) (line-end-position))
+      (indent-according-to-mode))))
 
 (defadvice newline-and-indent (before block-opening activate)
   "Append a newline first if the cursor is between { and }."

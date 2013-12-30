@@ -82,6 +82,36 @@ The functions must all be unary."
       arg)))
 
 
+;;; Flatten
+
+(defun flatten (tree &optional tail)
+  "Flatten TREE, in place.  Nil that are in car position, and
+non-nil values in cdr position, are preserved.  TAIL is for
+internal purposes."
+  (cond
+   ((null tree)
+    tail)
+   ((atom tree)
+    (cons tree tail))
+   (t
+    (let ((list tree))
+      (catch 'break
+        (while t
+          (when (consp (car list))
+            (let ((tail (flatten (car list) (flatten (cdr list) tail))))
+              (setcar list (car tail))
+              (setcdr list (cdr tail)))
+            (throw 'break nil))
+          (when (null (cdr list))
+            (setcdr list tail)
+            (throw 'break nil))
+          (when (atom (cdr list))
+            (setcdr list (cons (cdr list) tail))
+            (throw 'break nil))
+          (setq list (cdr list)))))
+    tree)))
+
+
 ;;; Time execution
 
 (defmacro time (&rest body)

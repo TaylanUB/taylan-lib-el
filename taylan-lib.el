@@ -298,24 +298,40 @@ like `<name>-file' but returns a directory, is created."
 
 ;;; Recursive directory traversal
 
-(defun directory-files-rec (directory &optional full nosort)
+(defun directory-files-rec (directory &optional format nosort)
   "Return a list representation of the file hierarchy rooted at
-DIRECTORY.  Regular files are represented by their names.
-Directories are represented by a cons cell whose car is the name
-of the directory and cdr the result of recursively calling
-`directory-files-rec' on it.  If FULL is non-nil, all returned
-file names are absolute paths.  If NOSORT is non-nil, no sorting
-is done on directory contents.  See `directory-files'."
-  (mapcar (lambda (file)
-            (let ((default-directory directory))
-              (if (file-directory-p file)
-                  (cons file
-                        (directory-files-rec file full nosort))
-                file)))
-          (directory-files directory
-                           full
-                           directory-files-no-dot-files-regexp
-                           nosort)))
+DIRECTORY.  If FORMAT is nil or `relative', a list of pathes
+relative to DIRECTORY is returned; if it's `absolute', the pathes
+are absolute; if it's `tree', then directories and their
+recursive contents are represented by sub-lists whose car is the
+name of the directory and cdr the contents.  (But the car of the
+top-level list is not DIRECTORY.)  If NOSORT is non-nil, no
+sorting is done on directory contents.  See `directory-files'."
+  (funcall (if (eq format 'tree) #'identity #'flatten)
+           (directory-files-rec1 directory format nosort "")))
+
+(defun directory-files-rec1 (directory format nosort path)
+  (let ((files (directory-files directory
+                                (eq format 'absolute)
+                                directory-files-no-dot-files-regexp
+                                nosort)))
+    (let ((default-directory
+            (file-name-as-directory (expand-file-name directory))))
+      (mapcar
+       (lambda (file)
+         (let ((path (concat path file)))
+           (if (not (file-directory-p file))
+               path
+             (cons
+              path
+              (directory-files-rec1
+               file format nosort
+               (case format
+                 ((nil relative) (file-name-as-directory path))
+                 ((absolute tree) "")
+                 (otherwise
+                  (error "Bad `directory-files-rec' format: %S" format))))))))
+       files))))
 
 
 ;;; Color conversions

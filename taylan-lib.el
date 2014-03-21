@@ -745,7 +745,7 @@ list of strings."
 
 (defun youtube-get-formats (uri)
   "Get the available formats for the YouTube video at URI."
-  (shell-command-to-string (shell-quasiquote youtube-dl -qF ,uri)))
+  (shell-command-to-string (shell-quasiquote youtube-dl -F ,uri)))
 (defun youtube-get-real-uri (uri &optional format)
   "Get the URI for the YouTube video at URI."
   (shell-command-to-string

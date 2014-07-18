@@ -25,103 +25,14 @@
   ;; To silence the compiler.
   (require 'shell))
 
-
-;;; Genprogn
-
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
-
-
-;;; Anaphora
-
-(defmacro aif (test then &rest else)
-  "Anaphoric if."
-  `(let ((it ,test)) (if it ,then ,@else)))
-
-(defmacro acond (&rest clauses)
-  "Anaphoric cond."
-  (if (null clauses)
-      'nil
-    (let ((test (caar clauses))
-          (body (cdar clauses))
-          (clauses (cdr clauses)))
-      `(aif ,test (progn ,@body) (acond ,@clauses)))))
-
-
-;; Alists
-
-(defun aput (alist-sym key value)
-  "Set the value for KEY in the alist stored in ALIST-SYM to
-VALUE."
-  (let ((cons (assoc key (symbol-value alist-sym))))
-    (if cons
-        (setcdr cons value)
-      (push (cons key value) (symbol-value alist-sym)))))
-
-(defun aget (alist key &optional default)
-  "Return the value for KEY in ALIST, or DEFAULT."
-  (let ((entry (assoc key alist)))
-    (if entry (cdr entry) default)))
-
-
-;;; Compose
-
-(defun compose (&rest functions)
-  "Return the composition of functions in the list FUNCTIONS.
-The functions must all be unary."
-  (lexical-let ((functions (nreverse functions)))
-    (lambda (arg)
-      (dolist (function functions)
-        (setq arg (funcall function arg)))
-      arg)))
-
-
-;;; Flatten
-
-(defun flatten (tree &optional tail)
-  "Flatten TREE, in place.  Nil that are in car position, and
-non-nil values in cdr position, are preserved.  TAIL is for
-internal purposes."
-  (cond
-   ((null tree)
-    tail)
-   ((atom tree)
-    (cons tree tail))
-   (t
-    (let ((list tree))
-      (catch 'break
-        (while t
-          (when (consp (car list))
-            (let ((tail (flatten (car list) (flatten (cdr list) tail))))
-              (setcar list (car tail))
-              (setcdr list (cdr tail)))
-            (throw 'break nil))
-          (when (null (cdr list))
-            (setcdr list tail)
-            (throw 'break nil))
-          (when (atom (cdr list))
-            (setcdr list (cons (cdr list) tail))
-            (throw 'break nil))
-          (setq list (cdr list)))))
-    tree)))
-
-
-;;; Time execution
-
-(defun time (function)
-  "Return execution time of body in seconds as a float."
-  (let ((start-time (current-time)))
-    (funcall function)
-    (let ((time (time-subtract (current-time) start-time)))
-      (+ (* (nth 0 time) (expt 2 16))
-         (nth 1 time)
-         (/ (nth 2 time) 1000000.0)))))
+(require 'taylan-alist)
+(require 'taylan-genprogn)
+(require 'taylan-flatten)
+(require 'taylan-time)
+(require 'taylan-with-string-buffer)
+(require 'taylan-shell-commands)
+(require 'taylan-shell-quote)
+(require 'taylan-osx)
 
 
 ;;; Replace symbol
@@ -394,179 +305,6 @@ OPEN and CLOSE can be chars or strings containing one char."
     (char "\"")))
 
 
-;;; With string buffer
-
-(defmacro with-string-buffer (initial-contents &rest body)
-  "Evaluate BODY like `progn' in temporary buffer, return contents.
-INITIAL-CONTENTS is evaluated before the temporary buffer is
-created, and inserted if non-nil."
-  (declare (indent 1))
-  (let ((content (make-symbol "initial-contents")))
-    `(let ((,content ,initial-contents))
-       (with-temp-buffer
-         (if ,content (insert ,content))
-         ,@body
-         (buffer-string)))))
-
-
-;;; Shell commands
-
-;; We want 9 shell commands:
-;; (normal on-region on-string) × (normal to-string to-kill-ring)
-;; Some of these already exist.
-
-(defvar shell-command-remove-trailing-newlines t
-  "Whether shell-command functions returning a string or saving
-to the kill-ring should remove trailing newlines from their
-output.")
-(defsubst shell-command--maybe-remove-trailing-newlines (string)
-  (if shell-command-remove-trailing-newlines
-      (replace-regexp-in-string (rx (+ "\n") eot) "" string)
-    string))
-
-;; `shell-command' exists
-
-;; `shell-command-on-region' exists
-
-(defun shell-command-on-string (string command)
-  "Execute string COMMAND in inferior shell with STRING as input."
-  (with-temp-buffer
-    (insert string)
-    (shell-command-on-region (point-min) (point-max) command)))
-
-;; `shell-command-to-string' exists
-(defadvice shell-command-to-string (around remove-trailing-newlines activate)
-  "Remove trailing newlines from the output if
-`shell-command-remove-trailing-newlines' is non-nil."
-  (setq ad-return-value
-        (shell-command--maybe-remove-trailing-newlines ad-do-it)))
-
-(defun shell-command-on-region-to-string (start end command)
-  "Execute string COMMAND in inferior shell with region as input
-and return its output as a string.  Trailing newlines are removed
-if `shell-command-remove-trailing-newlines' is non-nil."
-  (shell-command-on-string-to-string (buffer-substring start end) command))
-
-(defun shell-command-on-string-to-string (string command)
-  "Execute string COMMAND in inferior shell with STRING as input
-and return its output as a string.  Trailing newlines are removed
-if `shell-command-remove-trailing-newlines' is non-nil."
-  (shell-command--maybe-remove-trailing-newlines
-   (with-string-buffer string
-     (shell-command-on-region (point-min) (point-max) command nil t))))
-
-(defun shell-command-to-kill-ring (command)
-  "Execute string COMMAND in inferior shell and save its output
-in the kill-ring.  Trailing newlines are removed if
-`shell-command-remove-trailing-newlines' is non-nil."
-  (interactive (list (read-shell-command "Shell command: ")))
-  (kill-new (shell-command-to-string command)))
-
-(defun shell-command-on-region-to-kill-ring (start end command)
-  "Execute string COMMAND in inferior shell with region as input
-and save its output in the kill-ring.  Trailing newlines are
-removed if `shell-command-remove-trailing-newlines' is non-nil."
-  (interactive (list (region-beginning) (region-end)
-                     (read-shell-command "Shell command: ")))
-  (kill-new (shell-command-on-region-to-string start end command)))
-
-(defun shell-command-on-string-to-kill-ring (string command)
-  "Execute string COMMAND in inferior shell with STRING as input
-and save its output in the kill-ring.  Trailing newlines are
-removed if `shell-command-remove-trailing-newlines' is non-nil."
-  (with-temp-buffer
-    (insert string)
-    (shell-command-on-region-to-kill-ring
-     (region-beginning)
-     (region-end)
-     command)))
-
-
-;;; Shell string quote
-
-(defun shell-string-quote (string)
-  "Return a string which, when parsed according to POSIX shell
-grammar, would yield a \"TOKEN\" with the value STRING.
-
-In less technical terms, this sanitizes a string to be injected
-into a shell command.  For example it could be used like:
-
- (shell-command (concat \"grep -e \" (shell-string-quote str)))
-
-The above is sure to pass the string STR directly to the ARGV of
-grep.  It is safe, I swear.  Note however that the position in
-which you inject the resulting string can still change its
-meaning; e.g. the following will not work as expected,
-
- (shell-command (concat \"grep -e\" (shell-string-quote str)))
-
-because there is no white-space between the `-e' and the string
-in STR, in the resulting concatenated string."
-  (concat "'" (replace-regexp-in-string "'" "'\\\\''" string) "'"))
-
-(eval-when-compile
-  (defun shell-quasiquote-part (part)
-    "Process part of a `shell-quasiquote' body."
-    (cond
-     ((symbolp part) (symbol-name part))
-     ((stringp part) part)
-     ((numberp part) (number-to-string part))
-     (t (error "Bad part: %S" part)))))
-
-(defmacro shell-quasiquote (&rest parts)
-  "Create a shell command safe against injection.
-
-This works somewhat akin to ` aka quasi-quote, but is more
-complex.  Every element of PARTS must be one of:
-
-A symbol, evaluating to its name.
-A string, evaluating to itself.
-A number, evaluating to its decimal representation.
-
-`,x', where x must evaluate to a symbol, string, or number, and
-will be interpreted as above and then passed through
-`shell-string-quote'.
-
-`,@x', where x must be a list whose elements will each be
-interpreted like the x in `,x' and spliced into the results.
-
-`,,x', where x will be interpreted like in `,x' but not
-passed through `shell-string-quote'.
-
-`,,@x', where x must be a list whose elements will each be
-interpreted like the x in `,,x' and spliced into the results.
-
-All resulting strings are concatenated with separating
-white-space."
-  `(mapconcat
-    #'identity
-    (list
-     ,@(mapcar
-        (lambda (part)
-          (if (not (consp part))
-              (shell-quasiquote-part part)
-            (cond
-             ((eq (car part) '\,)
-              (let ((part (cadr part)))
-                (cond
-                 ((and (consp part) (eq (car part) '\,))
-                  `(shell-quasiquote-part ,(cadr part)))
-                 ((and (consp part) (eq (car part) '\,@))
-                  `(mapconcat #'shell-quasiquote-part ,(cadr part) " "))
-                 (t
-                  `(shell-string-quote (shell-quasiquote-part ,part))))))
-             ((eq (car part) '\,@)
-              `(mapconcat
-                (lambda (part)
-                  (shell-string-quote (shell-quasiquote-part part)))
-                ,(cadr part)
-                " "))
-             (t
-              (error "Plain list not allowed: %S" part)))))
-        parts))
-    " "))
-
-
 ;;; Toggle X clipboard usage
 
 (defun toggle-x-clipboard-usage ()
@@ -764,33 +502,6 @@ list of strings."
 (defun shellplayer-edit-playlist ()
   (interactive)
   (find-file shellplayer-playlist-file))
-
-
-;;; OS X goodies
-
-(defun osx-applescript (script)
-  "Execute the AppleScript SCRIPT asynchronously."
-  (start-process "osx-applescript" nil "osascript" "-e" script))
-
-(defun osx-applescript-to-string (script)
-  "Execute the AppleScript SCRIPT synchronously and return its
-output as a string."
-  (shell-command-to-string (shell-quasiquote osascript -e ,script)))
-
-(defun osx-alert ()
-  "Make Emacs display an OS X alert box.
-
-This will make the app icon bounce on OS X when Emacs isn't in
-the fore-ground, so it can be used as a simple notification
-mechanism to draw a user's attention to Emacs when they're
-working with another program."
-  (osx-applescript "tell application \"Emacs\" to display alert \"Alert!\""))
-
-(defun osx-frame-focused-p ()
-  "Return non-nil if Emacs.app is \"frontmost\"."
-  (let ((output (osx-applescript-to-string
-                 "path to frontmost application as Unicode text")))
-    (string-match-p ":Emacs.app:$" output)))
 
 (provide 'taylan-lib)
 ;;; taylan-lib.el ends here

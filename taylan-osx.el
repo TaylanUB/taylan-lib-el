@@ -26,9 +26,14 @@
 
 (require 'taylan-shell-quote)
 
-(defun osx-applescript (script)
-  "Execute the AppleScript SCRIPT asynchronously."
-  (start-process "osx-applescript" nil "osascript" "-e" script))
+(defun osx-applescript (script &optional buffer)
+  "Execute the AppleScript SCRIPT asynchronously.  Output goes to BUFFER if
+non-nil, otherwise discarded."
+  (let* ((process (start-process "osx-applescript" buffer "osascript")))
+    (when (not buffer)
+      (set-process-filter process 'ignore))
+    (process-send-string process (concat script "\n"))
+    (process-send-eof process)))
 
 (defun osx-applescript-to-string (script)
   "Execute the AppleScript SCRIPT synchronously and return its
@@ -56,7 +61,8 @@ working with another program."
 tell application \"GrowlHelperApp\"
   set the allNotificationsList to {\"Emacs Notification\"}
   set the enabledNotificationsList to {\"Emacs Notification\"}
-  register as application \"Emacs\" all notifications allNotificationsList \
+  register as application \"Emacs\" \
+    all notifications allNotificationsList \
     default notifications enabledNotificationsList \
     icon of application \"Emacs\"
 end tell"))

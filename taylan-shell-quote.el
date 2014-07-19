@@ -44,14 +44,13 @@ because there is no white-space between the `-e' and the string
 in STR, in the resulting concatenated string."
   (concat "'" (replace-regexp-in-string "'" "'\\\\''" string) "'"))
 
-(eval-when-compile
-  (defun shell-quasiquote-part (part)
-    "Process part of a `shell-quasiquote' body."
-    (cond
-     ((symbolp part) (symbol-name part))
-     ((stringp part) part)
-     ((numberp part) (number-to-string part))
-     (t (error "Bad part: %S" part)))))
+(defun shell-quasiquote-part (part)
+  "Process part of a `shell-quasiquote' body."
+  (cond
+   ((symbolp part) (symbol-name part))
+   ((stringp part) part)
+   ((numberp part) (number-to-string part))
+   (t (error "Bad part: %S" part))))
 
 (defmacro shell-quasiquote (&rest parts)
   "Create a shell command safe against injection.

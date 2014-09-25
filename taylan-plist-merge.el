@@ -1,4 +1,4 @@
-;;; taylan-with-string-buffer.el --- with-string-buffer function
+;;; taylan-plist-merge.el --- Merge plists
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
@@ -24,17 +24,15 @@
 
 ;;; Code:
 
-(defmacro with-string-buffer (initial-contents &rest body)
-  "Evaluate BODY like `progn' in temporary buffer, return contents.
-INITIAL-CONTENTS is evaluated before the temporary buffer is
-created, and inserted if non-nil."
-  (declare (indent 1))
-  (let ((content (make-symbol "initial-contents")))
-    `(let ((,content ,initial-contents))
-       (with-temp-buffer
-         (if ,content (insert ,content))
-         ,@body
-         (buffer-string)))))
+(defun plist-merge (old new)
+  "Merge the plist NEW into the plist OLD.
+Overlapping values in NEW overwrite values in OLD.  The merged
+plist is returned; use `(setq x (plist-merge x y))' to be sure to
+use the new value.  The plist OLD is modified by side-effects."
+  (while new
+    (setq old (plist-put old (car new) (cadr new)))
+    (setq new (cddr new)))
+  old)
 
-(provide 'taylan-with-string-buffer)
-;;; taylan-with-string-buffer.el ends here
+(provide 'taylan-plist-merge)
+;;; taylan-plist-merge.el ends here

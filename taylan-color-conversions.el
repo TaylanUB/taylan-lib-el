@@ -1,4 +1,4 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-color-conversions.el --- Color conversion functions
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
@@ -20,21 +20,28 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(defun color-name-to-hex (color)
+  "Return the hex representation of the color NAME."
+  (apply 'color-rgb-to-hex (color-name-to-rgb color)))
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
+(defun color-term-to-name (num)
+  "Return a string that is the name of the color NUM in the
+terminal colorspace."
+  (concat "color-" (number-to-string num)))
 
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(defun color-term-to-hex (num)
+  "Return the hex representation of the color NUM in the terminal
+colorspace."
+  (color-name-to-hex (color-term-to-name num)))
+
+(defun color-term-to-rgb (num)
+  "Return the rgb representation of the color NUM in the terminal
+colorspace."
+  (color-name-to-rgb (color-term-to-name num)))
+
+(provide 'taylan-color-conversions)
+;;; taylan-color-conversions.el ends here

@@ -26,7 +26,7 @@
 
 ;;; Code:
 
-(require 'taylan-with-string-buffer)
+(require 'taylan-string-buffer)
 
 (defvar shell-command-remove-trailing-newlines t
   "Whether shell-command functions returning a string or saving

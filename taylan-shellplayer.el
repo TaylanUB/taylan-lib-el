@@ -1,9 +1,9 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-shellplayer.el --- Interface to my shellplayer
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
 ;; Author: Taylan Ulrich Bayirli/Kammer <taylanbayirli@gmail.com>
-;; Keywords: extensions
+;; Keywords: multimedia, processes, unix
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,21 +20,18 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(require 'taylan-sysfiles)
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
+(defvar shellplayer-playlist-file (sysfile 'shellplayer-tmpdir "playlist")
+  "Playlist file of shellplayer.")
 
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(defun shellplayer-edit-playlist ()
+  (interactive)
+  (find-file shellplayer-playlist-file))
+
+(provide 'taylan-shellplayer)
+;;; taylan-shellplayer.el ends here

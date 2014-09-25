@@ -1,9 +1,9 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-for-match.el --- Execute code for every regexp match
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
 ;; Author: Taylan Ulrich Bayirli/Kammer <taylanbayirli@gmail.com>
-;; Keywords: extensions
+;; Keywords: extensions, matching
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,21 +20,26 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(defmacro for-match (regexp string &rest body)
+  "Evaluate BODY for each occurrence of REGEXP in STRING.
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
+During the evaluation of BODY, `$' is bound to a function which
+can be used to get a matched sub-expression, like `match-string'.
+E.g. ($ 0) will return the whole string that matched."
   (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
+  (let ((re (make-symbol "regexp"))
+        (str (make-symbol "string"))
+        (idx (make-symbol "index")))
+    `(let ((,re ,regexp)
+           (,str ,string))
+       (while (string-match ,re ,str)
+         (flet (($ (num) (match-string num ,str)))
+           ,@body)
+         (setq ,str (substring ,str (match-end 0)))))))
 
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(provide 'taylan-for-match)
+;;; taylan-for-match.el ends here

@@ -1,9 +1,9 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-indent.el --- More auto-indenting
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
 ;; Author: Taylan Ulrich Bayirli/Kammer <taylanbayirli@gmail.com>
-;; Keywords: extensions
+;; Keywords: convenience
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,21 +20,25 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(defadvice open-line (after indent activate)
+  "Fix indentation after the inserted newline."
+  (save-excursion
+    (forward-line)
+    (unless (= (line-beginning-position) (line-end-position))
+      (indent-according-to-mode))))
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
+(defadvice newline-and-indent (before block-opening activate)
+  "Append a newline first if the cursor is between { and }."
+  (when (and (not (nth 8 (syntax-ppss)))
+             (looking-back "{\s*")
+             (looking-at "\s*}"))
+    (save-excursion
+      (newline)
+      (indent-according-to-mode))))
 
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(provide 'taylan-indent)
+;;; taylan-indent.el ends here

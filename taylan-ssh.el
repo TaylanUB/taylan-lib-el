@@ -1,9 +1,9 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-ssh.el --- SSH
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
 ;; Author: Taylan Ulrich Bayirli/Kammer <taylanbayirli@gmail.com>
-;; Keywords: extensions
+;; Keywords: comm, processes, terminals, unix
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,21 +20,25 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(require 'term)
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
+(defun ssh (host &optional user)
+  "Run SSH in a term-mode buffer for HOST."
+  (interactive "sHost: \nsUser: ")
+  (let ((address (concat (if (< 0 (length user)) (concat user "@")) host)))
+    (switch-to-buffer
+     (make-term (concat "SSH for " address) "ssh" nil address))
+    (term-char-mode)))
 
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(defun ssh-dired (host &optional user)
+  "Visit home directory at HOST via tramp/ssh."
+  (interactive "sHost: \nsUser: ")
+  (find-file
+   (concat "/ssh:" (if (< 0 (length user)) (concat user "@")) host ":~")))
+
+(provide 'taylan-ssh)
+;;; taylan-ssh.el ends here

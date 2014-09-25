@@ -1,9 +1,9 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-create-tmpbuf.el --- Create temporary buffer
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
 ;; Author: Taylan Ulrich Bayirli/Kammer <taylanbayirli@gmail.com>
-;; Keywords: extensions
+;; Keywords: convenience, extensions
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,21 +20,15 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(defun create-temporary-buffer ()
+  "Create a temporary buffer and switch to it."
+  (interactive)
+  (switch-to-buffer (generate-new-buffer "*temporary-buffer*"))
+  (fundamental-mode))
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
-
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(provide 'taylan-create-tmpbuf)
+;;; taylan-create-tmpbuf.el ends here

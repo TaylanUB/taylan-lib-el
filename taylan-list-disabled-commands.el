@@ -1,9 +1,9 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-list-disabled-commands.el --- List disabled commands
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
 ;; Author: Taylan Ulrich Bayirli/Kammer <taylanbayirli@gmail.com>
-;; Keywords: extensions
+;; Keywords: help
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,21 +20,20 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(defun list-disabled-commands ()
+  "List all disabled commands."
+  (interactive)
+  (switch-to-buffer (get-buffer-create "*disabled-commands*"))
+  (erase-buffer)
+  (mapatoms
+   (lambda (a)
+     (when (and (commandp a) (get a 'disabled))
+       (insert (symbol-name a) "\n")))
+   obarray))
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
-
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(provide 'taylan-list-disabled-commands)
+;;; taylan-list-disabled-commands.el ends here

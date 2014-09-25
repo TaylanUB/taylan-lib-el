@@ -1,4 +1,4 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-string-buffer.el --- Run code in tmp buffer, return string
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
@@ -20,21 +20,21 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(defmacro with-string-buffer (initial-contents &rest body)
+  "Evaluate BODY like `progn' in temporary buffer, return contents.
+INITIAL-CONTENTS is evaluated before the temporary buffer is
+created, and inserted if non-nil."
+  (declare (indent 1))
+  (let ((content (make-symbol "initial-contents")))
+    `(let ((,content ,initial-contents))
+       (with-temp-buffer
+         (if ,content (insert ,content))
+         ,@body
+         (buffer-string)))))
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
-
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(provide 'taylan-string-buffer)
+;;; taylan-string-buffer.el ends here

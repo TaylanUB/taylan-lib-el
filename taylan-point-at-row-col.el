@@ -1,4 +1,4 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-point-at-row-col.el --- Point at row & col
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
@@ -20,21 +20,15 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(defun point-at-row-and-column (row column)
+  (save-excursion
+    (goto-char (window-start))
+    (forward-visible-line row)
+    (+ (point) column)))
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
-
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(provide 'taylan-point-at-row-col)
+;;; taylan-point-at-row-col.el ends here

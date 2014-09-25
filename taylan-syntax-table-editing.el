@@ -1,4 +1,4 @@
-;;; taylan-genprogn.el --- Macro creation helper
+;;; taylan-syntax-table-editing.el --- Edit syntax table conveniently
 
 ;; Copyright (C) 2014  Taylan Ulrich Bayirli/Kammer
 
@@ -20,21 +20,23 @@
 
 ;;; Commentary:
 
-;; Makes it easier to write macros that output a `progn' form which repeats an
-;; action over a series of forms.
+;; 
 
 ;;; Code:
 
-(require 'cl-lib)
+(require 'taylan-plural-convenience-macros)
 
-(defmacro genprogn (args sequence &rest body)
-  "This is a helper for creating macros.
-Generate a `progn' expression that would execute BODY for each
-element of SEQUENCE, with the variables specified in ARGS bound
-to the corresponding values in each element."
-  (declare (indent 2))
-  `(cons 'progn
-         (cl-loop for ,args in ,sequence collect (cons 'progn (list ,@body)))))
+(defun syntax-table-add-paren-pair (open close &optional table)
+  "Add OPEN and CLOSE to the syntax table as a parenthesis pair.
+OPEN and CLOSE can be chars or strings containing one char."
+  (let ((open (if (stringp open) (elt open 0) open))
+        (close (if (stringp close) (elt close 0) close)))
+   (modify-syntax-entries table
+     (open (string ?\( close)))))
 
-(provide 'taylan-genprogn)
-;;; taylan-genprogn.el ends here
+(defun syntax-table-add-quote-char (char &optional table)
+  (modify-syntax-entries table
+    (char "\"")))
+
+(provide 'taylan-syntax-table-editing)
+;;; taylan-syntax-table-editing.el ends here

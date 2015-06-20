@@ -25,8 +25,9 @@
 ;;; Code:
 
 (eval-when-compile
-  (require 'taylan-genprogn)
-  (require 'cl))
+  (require 'taylan-genprogn))
+
+(require 'cl-lib)
 
 (defun sysfile (name &rest path-components)
   "Return the pathname of the system file denoted by the symbol NAME.
@@ -60,7 +61,7 @@ like `<name>-file' but returns a directory, is created."
          (defun ,file-fn (&rest path-components)
            ,(concat "Return a file under `" (symbol-name dir-var)
                     "' by concatenating PATH-COMPONENTS.")
-           (apply 'concat ,dir-var (maplist
+           (apply 'concat ,dir-var (cl-maplist
                                     (lambda (list)
                                       (if (cdr list)
                                           (file-name-as-directory (car list))

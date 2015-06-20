@@ -25,6 +25,7 @@
 ;;; Code:
 
 (eval-when-compile
+  (require 'bytecomp)
   (setq byte-compile-interactive-only-functions
         (remove 'replace-regexp
                 byte-compile-interactive-only-functions)))

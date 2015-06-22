@@ -25,10 +25,7 @@
 ;;; Code:
 
 (eval-when-compile
-  (require 'bytecomp)
-  (setq byte-compile-interactive-only-functions
-        (remove 'replace-regexp
-                byte-compile-interactive-only-functions)))
+  (put 'replace-regexp 'interactive-only nil))
 
 (defun replace-symbol (from-symbol to-symbol &optional start end)
   "Call `replace-regexp' with FROM-SYMBOL surrounded with

@@ -20,7 +20,7 @@
 
 ;;; Commentary:
 
-;; 
+;;
 
 ;;; Code:
 
@@ -47,9 +47,11 @@ pastebin content.  Arguments are forwarded to this function.  The
 default value imitates pressing C-y.  The pastebin used depends
 on `pastebin-yank--pastebin-command'."
   (interactive)
-  (insert (pastebin-yank--pastebin
-           (with-string-buffer nil
-             (apply pastebin-yank--yank-function args)))))
+  (let* ((text (with-string-buffer nil
+                 (apply pastebin-yank--yank-function args)))
+         (url (pastebin-yank--pastebin text)))
+    (insert url)
+    (message "Pasted:\n%s" text)))
 
 (provide 'taylan-pastebin-yank)
 ;;; taylan-pastebin-yank.el ends here

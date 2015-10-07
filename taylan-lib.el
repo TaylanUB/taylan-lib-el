@@ -26,7 +26,6 @@
 (require 'taylan-time)
 (require 'taylan-string-buffer)
 (require 'taylan-shell-commands)
-(require 'taylan-shell-quote)
 (require 'taylan-replace-symbol)
 (require 'taylan-for-match)
 (require 'taylan-plist-merge)
@@ -45,7 +44,6 @@
 (require 'taylan-ssh)
 (require 'taylan-list-disabled-commands)
 (require 'taylan-term-programs)
-(require 'taylan-osx)
 
 (provide 'taylan-lib)
 ;;; taylan-lib.el ends here

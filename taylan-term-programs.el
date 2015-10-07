@@ -25,7 +25,7 @@
 ;;; Code:
 
 (require 'term)
-(require 'taylan-shell-quote)
+(require 'shell-quasiquote)
 
 (defun rtorrent ()
   "Switch to the rtorrent buffer, creating it if it doesn't
@@ -48,7 +48,7 @@ list of strings."
                    file
                  (expand-file-name file)))
          (partial-shell-command
-          (shell-quasiquote ,mplayer-executable ,file))
+          (shqq (,mplayer-executable ,file)))
          (shell-command
           (if (and (called-interactively-p 'any) arguments)
               (read-shell-command "Shell command: " partial-shell-command)
@@ -60,11 +60,11 @@ list of strings."
 
 (defun youtube-get-formats (uri)
   "Get the available formats for the YouTube video at URI."
-  (shell-command-to-string (shell-quasiquote youtube-dl -F ,uri)))
+  (shell-command-to-string (shqq (youtube-dl -F ,uri))))
 (defun youtube-get-real-uri (uri &optional format)
   "Get the URI for the YouTube video at URI."
   (shell-command-to-string
-   (shell-quasiquote youtube-dl -qg ,uri ,@(if format `(-f ,format)))))
+   (shqq (youtube-dl -qg ,uri ,@(if format `(-f ,format))))))
 (defun youtube (uri &optional mplayer-arguments)
   "This is like the `mplayer' command but takes a YouTube URI."
   (interactive "sURI: \nP")

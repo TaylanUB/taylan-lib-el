@@ -34,7 +34,7 @@ exist."
   (switch-to-buffer (make-term "rtorrent" "rtorrent"))
   (term-char-mode))
 
-(defvar mplayer-executable "mplayer")
+(defvar mplayer-executable "mpv")
 
 (defun mplayer (file &optional arguments)
   "Start a terminal-emulator with MPlayer playing FILE.

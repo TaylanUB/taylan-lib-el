@@ -52,8 +52,7 @@ list of strings."
          (shell-command
           (if (and (called-interactively-p 'any) arguments)
               (read-shell-command "Shell command: " partial-shell-command)
-            (concat partial-shell-command
-                    (mapconcat #'shell-quote-argument arguments " ")))))
+            (shqq (,,partial-shell-command ,@arguments)))))
     (switch-to-buffer (make-term "MPlayer" "sh" nil "-c" shell-command))
     (term-mode)
     (term-char-mode)))

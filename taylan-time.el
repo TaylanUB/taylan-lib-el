@@ -28,13 +28,10 @@
   "Return execution time of calling FUNCTION in seconds as a
 float.  FUNCTION is byte-compiled automatically."
   (setq function (byte-compile function))
-  (let ((start (current-time)))
+  (let ((start (float-time)))
     (funcall function)
-    (let ((end (current-time)))
-      (let ((time (time-subtract end start)))
-        (+ (* (nth 0 time) (expt 2 16))
-           (nth 1 time)
-           (/ (nth 2 time) 1000000.0))))))
+    (let ((end (float-time)))
+      (- end start))))
 
 (provide 'taylan-time)
 ;;; taylan-time.el ends here

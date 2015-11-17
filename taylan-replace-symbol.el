@@ -28,8 +28,9 @@
   (put 'replace-regexp 'interactive-only nil))
 
 (defun replace-symbol (from-symbol to-symbol &optional start end)
-  "Call `replace-regexp' with FROM-SYMBOL surrounded with
-symbol-delimiters, and the other arguments unchanged."
+  "Call `replace-regexp' with FROM-SYMBOL regexp-quoted and
+surrounded with symbol-delimiters, and the other arguments
+unchanged."
   (interactive
    (let* ((region (and transient-mark-mode mark-active))
           (common

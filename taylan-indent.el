@@ -34,7 +34,7 @@
 (defadvice newline-and-indent (before block-opening activate)
   "Append a newline first if the cursor is between { and }."
   (when (and (not (nth 8 (syntax-ppss)))
-             (looking-back "{\s*")
+             (looking-back "{\s*" nil)
              (looking-at "\s*}"))
     (save-excursion
       (newline)

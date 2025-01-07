@@ -25,8 +25,7 @@
 ;;; Code:
 
 (eval-when-compile
-  (require 'taylan-genprogn)
-  (require 'cl))
+  (require 'taylan-genprogn))
 
 (defmacro toggle (&rest symbols)
   "Set each SYMBOL to (not SYMBOL)."

@@ -25,7 +25,7 @@
 ;;; Code:
 
 (eval-when-compile
-  (require 'cl))
+  (require 'cl-macs))
 
 (require 'taylan-flatten)
 
@@ -57,7 +57,7 @@ sorting is done on directory contents.  See `directory-files'."
               path
               (directory-files-rec1
                file format nosort
-               (case format
+               (cl-case format
                  ((nil relative) (file-name-as-directory path))
                  ((absolute tree) "")
                  (otherwise

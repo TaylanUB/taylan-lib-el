@@ -34,8 +34,7 @@
 If PATH-COMPONENTS are given, treat all components up to the last
 one, including the system file NAME, as directories, and
 concatenate them to make a path."
-  (let ((file (getenv (replace-regexp-in-string
-                            "-" "_" (upcase (symbol-name name))))))
+  (let ((file (getenv (symbol-name name))))
     (dolist (component path-components file)
       (setq file (expand-file-name component file)))))
 
@@ -56,7 +55,7 @@ like `<name>-file' but returns a directory, is created."
            (file-fn (intern (concat name "-file")))
            (dir-fn (intern (concat name "-dir"))))
       `(progn
-         (defvar ,dir-var ,dir
+         (defvar ,dir-var ,(file-name-as-directory (expand-file-name dir))
            ,(concat "Path of the " name " directory."))
          (defun ,file-fn (&rest path-components)
            ,(concat "Return a file under `" (symbol-name dir-var)

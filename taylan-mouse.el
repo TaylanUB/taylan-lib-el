@@ -25,11 +25,11 @@
 ;;; Code:
 
 (eval-when-compile
-  (require 'cl))
+  (require 'cl-macs))
 
 (defun point-at-mouse ()
   (interactive)
-  (destructuring-bind (_ x . y) (mouse-pixel-position)
+  (cl-destructuring-bind (_ x . y) (mouse-pixel-position)
     (when (and x y)
       (posn-point (posn-at-x-y x y)))))
 
